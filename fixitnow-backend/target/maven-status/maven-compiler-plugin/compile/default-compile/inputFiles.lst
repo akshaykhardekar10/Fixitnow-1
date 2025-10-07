@@ -1,0 +1,11 @@
+C:\Users\Chandan Choudhury\Desktop\FixitNowProject\fixitnow-backend\src\main\java\com\fixitnow\dto\AuthRequest.java
+C:\Users\Chandan Choudhury\Desktop\FixitNowProject\fixitnow-backend\src\main\java\com\fixitnow\repository\UserRepository.java
+C:\Users\Chandan Choudhury\Desktop\FixitNowProject\fixitnow-backend\src\main\java\com\fixitnow\model\User.java
+C:\Users\Chandan Choudhury\Desktop\FixitNowProject\fixitnow-backend\src\main\java\com\fixitnow\controller\AuthController.java
+C:\Users\Chandan Choudhury\Desktop\FixitNowProject\fixitnow-backend\src\main\java\com\fixitnow\config\JwtAuthFilter.java
+C:\Users\Chandan Choudhury\Desktop\FixitNowProject\fixitnow-backend\src\main\java\com\fixitnow\config\SecurityConfig.java
+C:\Users\Chandan Choudhury\Desktop\FixitNowProject\fixitnow-backend\src\main\java\com\fixitnow\model\Role.java
+C:\Users\Chandan Choudhury\Desktop\FixitNowProject\fixitnow-backend\src\main\java\com\fixitnow\service\UserDetailsServiceImpl.java
+C:\Users\Chandan Choudhury\Desktop\FixitNowProject\fixitnow-backend\src\main\java\com\fixitnow\service\JwtService.java
+C:\Users\Chandan Choudhury\Desktop\FixitNowProject\fixitnow-backend\src\main\java\com\fixitnow\dto\AuthResponse.java
+C:\Users\Chandan Choudhury\Desktop\FixitNowProject\fixitnow-backend\src\main\java\com\fixitnow\FixitnowApplication.java

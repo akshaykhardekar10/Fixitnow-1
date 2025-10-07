@@ -1,0 +1,11 @@
+com\fixitnow\dto\AuthResponse.class
+com\fixitnow\config\JwtAuthFilter.class
+com\fixitnow\controller\AuthController.class
+com\fixitnow\dto\AuthRequest.class
+com\fixitnow\service\JwtService.class
+com\fixitnow\model\Role.class
+com\fixitnow\FixitnowApplication.class
+com\fixitnow\service\UserDetailsServiceImpl.class
+com\fixitnow\model\User.class
+com\fixitnow\repository\UserRepository.class
+com\fixitnow\config\SecurityConfig.class
