@@ -2,14 +2,15 @@ package com.fixitnow.controller;
 
 import com.fixitnow.dto.AuthRequest;
 import com.fixitnow.dto.AuthResponse;
+import com.fixitnow.dto.UserDTO;
 import com.fixitnow.model.Role;
-import com.fixitnow.model.User;
-import com.fixitnow.repository.UserRepository;
 import com.fixitnow.service.JwtService;
+import com.fixitnow.service.UserService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.*;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -18,52 +19,47 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/auth")
 @CrossOrigin(origins = "*") // keep for development; tighten in production
+@RequiredArgsConstructor
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
-    private final UserRepository userRepository;
-    private final BCryptPasswordEncoder passwordEncoder;
+    private final UserService userService;
     private final JwtService jwtService;
-    private final org.springframework.security.core.userdetails.UserDetailsService userDetailsService;
-
-    public AuthController(AuthenticationManager authenticationManager,
-                          UserRepository userRepository,
-                          BCryptPasswordEncoder passwordEncoder,
-                          JwtService jwtService,
-                          org.springframework.security.core.userdetails.UserDetailsService userDetailsService) {
-        this.authenticationManager = authenticationManager;
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtService = jwtService;
-        this.userDetailsService = userDetailsService;
-    }
+    private final UserDetailsService userDetailsService;
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody AuthRequest req) {
         if (req.getEmail() == null || req.getPassword() == null) {
             return ResponseEntity.badRequest().body(Map.of("error", "email and password required"));
         }
-        if (userRepository.findByEmail(req.getEmail()).isPresent()) {
+        if (userService.existsByEmail(req.getEmail())) {
             return ResponseEntity.badRequest().body(Map.of("error", "Email already registered"));
         }
-        User user = new User();
-        user.setName(req.getName());
-        user.setEmail(req.getEmail());
-        user.setPassword(passwordEncoder.encode(req.getPassword()));
+        
+        UserDTO userDTO = UserDTO.builder()
+                .name(req.getName())
+                .email(req.getEmail())
+                .password(req.getPassword())
+                .location(req.getLocation())
+                .build();
+                
         try {
-            if (req.getRole() != null) user.setRole(Role.valueOf(req.getRole().toUpperCase()));
-            else user.setRole(Role.CUSTOMER);
+            if (req.getRole() != null) {
+                userDTO.setRole(Role.valueOf(req.getRole().toUpperCase()));
+            } else {
+                userDTO.setRole(Role.CUSTOMER);
+            }
         } catch (Exception ex) {
-            user.setRole(Role.CUSTOMER);
+            userDTO.setRole(Role.CUSTOMER);
         }
-        user.setLocation(req.getLocation());
-        userRepository.save(user);
+        
+        UserDTO savedUser = userService.createUser(userDTO);
 
         // Return some useful info (no password)
         return ResponseEntity.ok(Map.of(
                 "message", "User registered",
-                "email", user.getEmail(),
-                "role", user.getRole().name()
+                "email", savedUser.getEmail(),
+                "role", savedUser.getRole().name()
         ));
     }
 
@@ -81,21 +77,26 @@ public class AuthController {
         UserDetails ud = userDetailsService.loadUserByUsername(req.getEmail());
 
         // fetch full user record to include role and optional other fields
-        var userOpt = userRepository.findByEmail(req.getEmail());
-        if (userOpt.isEmpty()) {
-            // unexpected, but handle gracefully
-            String accessFallback = jwtService.generateAccessToken(ud);
-            String refreshFallback = jwtService.generateRefreshToken(ud);
-            return ResponseEntity.ok(new AuthResponse(accessFallback, refreshFallback, null));
+        UserDTO currentUser = userService.getCurrentUser();
+        if (currentUser == null) {
+            // Try to find by email directly
+            var userOpt = userService.findAllUsers().stream()
+                    .filter(u -> u.getEmail().equals(req.getEmail()))
+                    .findFirst();
+            if (userOpt.isEmpty()) {
+                // unexpected, but handle gracefully
+                String accessFallback = jwtService.generateAccessToken(ud);
+                String refreshFallback = jwtService.generateRefreshToken(ud);
+                return ResponseEntity.ok(new AuthResponse(accessFallback, refreshFallback, null));
+            }
+            currentUser = userOpt.get();
         }
-
-        User user = userOpt.get();
 
         String access = jwtService.generateAccessToken(ud);
         String refresh = jwtService.generateRefreshToken(ud);
 
         // return access, refresh and role
-        AuthResponse response = new AuthResponse(access, refresh, user.getRole() != null ? user.getRole().name() : null);
+        AuthResponse response = new AuthResponse(access, refresh, currentUser.getRole() != null ? currentUser.getRole().name() : null);
         return ResponseEntity.ok(response);
     }
 
@@ -115,15 +116,16 @@ public class AuthController {
     @GetMapping("/me")
     public ResponseEntity<?> me(Principal principal) {
         if (principal == null) return ResponseEntity.status(401).body(Map.of("error", "Not authenticated"));
-        var userOpt = userRepository.findByEmail(principal.getName());
-        if (userOpt.isEmpty()) return ResponseEntity.status(404).body(Map.of("error", "User not found"));
-        var u = userOpt.get();
+        
+        UserDTO currentUser = userService.getCurrentUser();
+        if (currentUser == null) return ResponseEntity.status(404).body(Map.of("error", "User not found"));
+        
         return ResponseEntity.ok(Map.of(
-                "id", u.getId(),
-                "email", u.getEmail(),
-                "name", u.getName(),
-                "role", u.getRole(),
-                "location", u.getLocation()
+                "id", currentUser.getId(),
+                "email", currentUser.getEmail(),
+                "name", currentUser.getName(),
+                "role", currentUser.getRole(),
+                "location", currentUser.getLocation()
         ));
     }
 }
