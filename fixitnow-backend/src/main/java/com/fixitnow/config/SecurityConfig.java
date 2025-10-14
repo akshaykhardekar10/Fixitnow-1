@@ -1,6 +1,7 @@
 package com.fixitnow.config;
 
 import com.fixitnow.service.UserDetailsServiceImpl;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.*;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -19,15 +20,11 @@ import java.util.List;
 
 @Configuration
 @EnableMethodSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
     private final UserDetailsServiceImpl userDetailsService;
-
-    public SecurityConfig(JwtAuthFilter jwtAuthFilter, UserDetailsServiceImpl userDetailsService) {
-        this.jwtAuthFilter = jwtAuthFilter;
-        this.userDetailsService = userDetailsService;
-    }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -37,6 +34,19 @@ public class SecurityConfig {
           .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
           .authorizeHttpRequests(auth -> auth
               .requestMatchers("/api/auth/**").permitAll()
+              .requestMatchers("/api/test/**").permitAll()
+              .requestMatchers("/api/validate/**").permitAll()
+              .requestMatchers("/api/health/**").permitAll()
+              .requestMatchers("/api/categories").permitAll()
+              .requestMatchers("/api/categories/{id}").permitAll()
+              .requestMatchers("/api/providers").permitAll()
+              .requestMatchers("/api/providers/verified").permitAll()
+              .requestMatchers("/api/providers/category/**").permitAll()
+              .requestMatchers("/api/providers/location").permitAll()
+              .requestMatchers("/api/providers/{id}").permitAll()
+              .requestMatchers("/api/users/providers").permitAll()
+              .requestMatchers("/api/admin/**").hasRole("ADMIN")
+              .requestMatchers("/api/categories/**").hasRole("ADMIN")
               .anyRequest().authenticated()
           )
           .authenticationProvider(authenticationProvider())
